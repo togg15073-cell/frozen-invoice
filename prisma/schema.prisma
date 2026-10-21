@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model ShopSettings {
+  shop          String   @id
+  companyName   String   @default("")
+  addressLines  String   @default("")
+  email         String   @default("")
+  phone         String   @default("")
+  vatNumber     String   @default("")
+  invoicePrefix String   @default("INV-")
+  nextNumber    Int      @default(1)
+  footer        String   @default("Thank you for your business.")
+  hideNotes     Boolean  @default(true)
+  autoCreate    Boolean  @default(false)
+  accentColor   String   @default("#1d2433")
+  updatedAt     DateTime @updatedAt
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  shop         String
+  orderId      String
+  orderName    String
+  number       String
+  type         String   @default("invoice")
+  customerName String   @default("")
+  email        String   @default("")
+  currency     String   @default("USD")
+  total        Float    @default(0)
+  snapshot     String
+  createdAt    DateTime @default(now())
+
+  @@index([shop, createdAt])
+  @@index([shop, orderId])
+}
