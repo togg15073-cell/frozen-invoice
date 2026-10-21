@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "d0c87293da9dfb00065931dfd9013a33"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://example.com"
 embedded = true
 name = "Frozen Invoice"
 
@@ -20,16 +20,13 @@ api_version = "2025-01"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/create"
-  topics = [ "orders/create" ]
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/compliance"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [ "https://example.com/auth/callback", "https://example.com/auth/shopify/callback", "https://example.com/api/auth/callback" ]
 
 [build]
 include_config_on_deploy = true
