@@ -26,6 +26,9 @@ query Order($id: ID!) { order(id: $id) {
   totalTaxSet { shopMoney { amount } } totalDiscountsSet { shopMoney { amount } } totalPriceSet { shopMoney { amount } }
   taxLines { title rate priceSet { shopMoney { amount } } }
   shippingLine { title }
+  refunds { createdAt totalRefundedSet { shopMoney { amount } }
+    refundLineItems(first: 50) { nodes { quantity subtotalSet { shopMoney { amount } } totalTaxSet { shopMoney { amount } }
+      lineItem { title sku variantTitle originalUnitPriceSet { shopMoney { amount } } taxLines { rate } } } } }
   lineItems(first: 100) { nodes { title quantity sku variantTitle
     originalUnitPriceSet { shopMoney { amount } } discountedTotalSet { shopMoney { amount } }
     taxLines { rate } } }
@@ -39,6 +42,7 @@ export async function monthlyUsage(shop: string) {
 }
 
 export async function createDocument(admin: any, shop: string, orderGid: string, plan: PlanKey, type = "invoice") {
+  if (type === "credit" && plan !== "pro") return { error: "Credit notes are available on the Pro plan." } as const;
   const used = await monthlyUsage(shop);
   const limit = PLANS[plan].docsPerMonth;
   if (used >= limit) return { error: `Monthly limit reached (${used}/${limit} documents on the ${PLANS[plan].name} plan). Upgrade to create more.` } as const;
@@ -60,6 +64,7 @@ export async function createDocument(admin: any, shop: string, orderGid: string,
     number = `${type === "packing" ? "PS-" : "CN-"}${String(o.name).replace(/^#/, "")}`;
   }
 
+  if (type === "credit" && !(o.refunds || []).length) return { error: "This order has no refunds, so there is nothing to credit." } as const;
   const vatAttr = (o.customAttributes || []).find((a: any) => /vat|tax ?id|abn|ein/i.test(a.key));
   const b = o.billingAddress || o.shippingAddress || {};
   const snap: Snapshot = {
@@ -68,9 +73,13 @@ export async function createDocument(admin: any, shop: string, orderGid: string,
     seller: { companyName: s.companyName, addressLines: s.addressLines, email: s.email, phone: s.phone, vatNumber: s.vatNumber, footer: s.footer, accentColor: s.accentColor },
     buyer: { name: b.name || o.customer?.displayName || "", company: b.company || "", lines: addr(b), email: o.email || o.customer?.email || "", phone: b.phone || o.phone || "", vatNumber: vatAttr?.value || "" },
     shipTo: o.shippingAddress ? { name: o.shippingAddress.name || "", lines: addr(o.shippingAddress) } : null,
-    items: (o.lineItems?.nodes || []).map((li: any) => ({ title: li.title, variant: li.variantTitle || "", sku: li.sku || "", qty: li.quantity, unit: n(li.originalUnitPriceSet), total: n(li.discountedTotalSet), taxRate: li.taxLines?.[0]?.rate ?? null })),
-    totals: { subtotal: n(o.subtotalPriceSet), discount: n(o.totalDiscountsSet), shipping: n(o.totalShippingPriceSet), tax: n(o.totalTaxSet), total: n(o.totalPriceSet), currency: o.currencyCode, taxesIncluded: !!o.taxesIncluded },
-    taxLines: (o.taxLines || []).map((t: any) => ({ title: t.title, rate: t.rate, amount: n(t.priceSet) })),
+    items: type === "credit"
+      ? (o.refunds || []).flatMap((r: any) => (r.refundLineItems?.nodes || []).map((rl: any) => ({ title: rl.lineItem.title, variant: rl.lineItem.variantTitle || "", sku: rl.lineItem.sku || "", qty: rl.quantity, unit: n(rl.lineItem.originalUnitPriceSet), total: n(rl.subtotalSet), taxRate: rl.lineItem.taxLines?.[0]?.rate ?? null })))
+      : (o.lineItems?.nodes || []).map((li: any) => ({ title: li.title, variant: li.variantTitle || "", sku: li.sku || "", qty: li.quantity, unit: n(li.originalUnitPriceSet), total: n(li.discountedTotalSet), taxRate: li.taxLines?.[0]?.rate ?? null })),
+    totals: type === "credit"
+      ? (() => { const refunded = (o.refunds || []).reduce((a: number, r: any) => a + n(r.totalRefundedSet), 0); const tax = (o.refunds || []).flatMap((r: any) => r.refundLineItems?.nodes || []).reduce((a: number, rl: any) => a + n(rl.totalTaxSet), 0); const sub = (o.refunds || []).flatMap((r: any) => r.refundLineItems?.nodes || []).reduce((a: number, rl: any) => a + n(rl.subtotalSet), 0); return { subtotal: sub, discount: 0, shipping: Math.max(0, Math.round((refunded - sub - (o.taxesIncluded ? 0 : tax)) * 100) / 100), tax, total: refunded, currency: o.currencyCode, taxesIncluded: !!o.taxesIncluded }; })()
+      : { subtotal: n(o.subtotalPriceSet), discount: n(o.totalDiscountsSet), shipping: n(o.totalShippingPriceSet), tax: n(o.totalTaxSet), total: n(o.totalPriceSet), currency: o.currencyCode, taxesIncluded: !!o.taxesIncluded },
+    taxLines: type === "credit" ? [] : (o.taxLines || []).map((t: any) => ({ title: t.title, rate: t.rate, amount: n(t.priceSet) })),
     shippingMethod: o.shippingLine?.title || "",
     note: s.hideNotes ? null : o.note || null,
   };

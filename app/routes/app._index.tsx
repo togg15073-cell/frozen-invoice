@@ -63,7 +63,8 @@ export default function Index() {
               <IndexTable resourceName={{ singular: "order", plural: "orders" }} itemCount={orders.length} selectable={false}
                 headings={[{ title: "Order" }, { title: "Date" }, { title: "Customer" }, { title: "Total" }, { title: "Payment" }, { title: "Documents" }]}>
                 {orders.map((o: any, i: number) => {
-                  const inv = docFor(o.id, "invoice"), pack = docFor(o.id, "packing");
+                  const inv = docFor(o.id, "invoice"), pack = docFor(o.id, "packing"), cn = docFor(o.id, "credit");
+                  const refunded = /REFUNDED/.test(o.displayFinancialStatus || "");
                   const busy = fetcher.state !== "idle" && fetcher.formData?.get("orderId") === o.id;
                   return (
                     <IndexTable.Row id={o.id} key={o.id} position={i}>
@@ -78,6 +79,8 @@ export default function Index() {
                             : <Button size="slim" loading={busy} onClick={() => fetcher.submit({ orderId: o.id, type: "invoice" }, { method: "post" })}>Create invoice</Button>}
                           {pack ? <Button url={`/app/documents/${pack.id}/pdf`} target="_blank" size="slim" variant="plain">Packing slip</Button>
                             : <Button size="slim" variant="plain" onClick={() => fetcher.submit({ orderId: o.id, type: "packing" }, { method: "post" })}>Packing slip</Button>}
+                          {refunded && (cn ? <Button url={`/app/documents/${cn.id}/pdf`} target="_blank" size="slim" variant="plain">Credit note</Button>
+                            : <Button size="slim" variant="plain" onClick={() => fetcher.submit({ orderId: o.id, type: "credit" }, { method: "post" })}>Credit note</Button>)}
                         </InlineStack>
                       </IndexTable.Cell>
                     </IndexTable.Row>

@@ -4,11 +4,19 @@ import type { Snapshot } from "../models/documents.server";
 const money = (v: number, cur: string) => new Intl.NumberFormat("en-US", { style: "currency", currency: cur }).format(v);
 const date = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 
-export function renderInvoicePdf(s: Snapshot): Promise<Buffer> {
+export function renderInvoicePdf(s: Snapshot): Promise<Buffer> { return renderDocumentsPdf([s]); }
+
+export function renderDocumentsPdf(snaps: Snapshot[]): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 50, info: { Title: `${s.type} ${s.number}` } });
+    const doc = new PDFDocument({ size: "A4", margin: 50, autoFirstPage: false, info: { Title: snaps.length === 1 ? `${snaps[0].type} ${snaps[0].number}` : `${snaps.length} documents` } });
     const chunks: Buffer[] = [];
     doc.on("data", (c) => chunks.push(c)); doc.on("end", () => resolve(Buffer.concat(chunks))); doc.on("error", reject);
+    for (const s of snaps) { doc.addPage(); draw(doc, s); }
+    doc.end();
+  });
+}
+
+function draw(doc: PDFKit.PDFDocument, s: Snapshot) {
     const W = doc.page.width - 100, L = 50, cur = s.totals.currency, accent = /^#[0-9a-f]{6}$/i.test(s.seller.accentColor) ? s.seller.accentColor : "#1d2433";
     const title = s.type === "credit" ? "CREDIT NOTE" : s.type === "packing" ? "PACKING SLIP" : "INVOICE";
 
@@ -54,7 +62,5 @@ export function renderInvoicePdf(s: Snapshot): Promise<Buffer> {
       if (t.taxesIncluded) { doc.font("Helvetica").fontSize(8).fillColor("#555").text("Prices include tax.", tx, y, { width: tw, align: "right" }); doc.fillColor("#000"); y += 12; }
     }
     if (s.note) { y += 10; doc.font("Helvetica-Bold").fontSize(9).text("Note", L, y); doc.font("Helvetica").text(s.note, L, y + 12, { width: W }); y = doc.y; }
-    if (s.seller.footer) doc.font("Helvetica").fontSize(8).fillColor("#555").text(s.seller.footer, L, doc.page.height - 70, { width: W, align: "center" });
-    doc.end();
-  });
+    if (s.seller.footer) { doc.font("Helvetica").fontSize(8).fillColor("#555").text(s.seller.footer, L, doc.page.height - 70, { width: W, align: "center", lineBreak: false }); doc.fillColor("#000"); }
 }
