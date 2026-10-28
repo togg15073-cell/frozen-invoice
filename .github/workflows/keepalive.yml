@@ -7,4 +7,4 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - run: curl -fsS -o /dev/null -m 60 "${{ vars.APP_URL }}/privacy" || true
+      - run: curl -fsS -o /dev/null -m 60 "https://frozen-invoice.onrender.com/privacy" || true
