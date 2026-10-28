@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit } from "@remix-run/react";
+import { useLoaderData, useSubmit, useActionData } from "@remix-run/react";
 import { Page, Card, InlineGrid, Text, Button, BlockStack, List, Banner } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -23,12 +23,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   for (const s of appSubscriptions) await billing.cancel({ subscriptionId: s.id, isTest, prorate: true });
   if (target === "free") return redirect("/app/plans");
   const returnUrl = `https://${session.shop}/admin/apps/${process.env.SHOPIFY_API_KEY}/app/plans`;
-  return billing.request({ plan: target as "Starter" | "Pro", isTest, returnUrl });
+  try {
+    return await billing.request({ plan: target as "Starter" | "Pro", isTest, returnUrl });
+  } catch (e: any) {
+    const detail = Array.isArray(e?.errorData) ? e.errorData.map((x: any) => x.message).join("; ") : String(e?.message || e);
+    return json({ error: `Could not start the subscription: ${detail}` }, { status: 400 });
+  }
 };
 
 export default function Plans() {
   const { plan, used } = useLoaderData<typeof loader>();
   const submit = useSubmit();
+  const actionData = useActionData<{ error?: string }>();
   const features: Record<string, string[]> = {
     free: ["20 documents / month", "Invoices & packing slips", "Prices frozen at order time", "Search by order, invoice, customer"],
     starter: ["300 documents / month", "Everything in Free", "Automatic invoice on new orders", "Email support within 24h"],
@@ -38,6 +44,7 @@ export default function Plans() {
     <Page>
       <TitleBar title="Plan" />
       <BlockStack gap="400">
+        {actionData?.error && <Banner tone="critical">{actionData.error}</Banner>}
         <Banner tone="info">Billing counts <b>documents you create</b> — never your store's order volume. {used} documents created this month. Paid plans include a 7-day free trial.</Banner>
         <InlineGrid columns={{ xs: 1, md: 3 }} gap="400">
           {(Object.keys(PLANS) as (keyof typeof PLANS)[]).map((k) => (
