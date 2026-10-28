@@ -13,7 +13,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
     case "CUSTOMERS_REDACT": {
       const email = (payload as any).customer?.email;
-      if (email) await prisma.document.updateMany({ where: { shop, email }, data: { customerName: "[redacted]", email: "" } });
+      if (email) {
+        const docs = await prisma.document.findMany({ where: { shop, email }, select: { id: true, snapshot: true } });
+        for (const d of docs) {
+          const snap = JSON.parse(d.snapshot);
+          snap.buyer = { ...snap.buyer, name: "[redacted]", company: "", lines: [], email: "", phone: "", vatNumber: "" };
+          snap.shipTo = null;
+          await prisma.document.update({ where: { id: d.id }, data: { customerName: "[redacted]", email: "", snapshot: JSON.stringify(snap) } });
+        }
+        console.log("customers/redact", shop, docs.length);
+      }
       break;
     }
     case "SHOP_REDACT":
