@@ -29,5 +29,4 @@ api_version = "2025-01"
 redirect_urls = [ "https://frozen-invoice.onrender.com/auth/callback", "https://frozen-invoice.onrender.com/auth/shopify/callback", "https://frozen-invoice.onrender.com/api/auth/callback" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
