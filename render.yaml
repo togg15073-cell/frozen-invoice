@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: frozen-invoice
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npm run build && npx prisma generate
+    startCommand: npx prisma migrate deploy && npm run start
+    healthCheckPath: /privacy
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: SCOPES
+        value: read_orders,read_customers
+      - key: SHOPIFY_APP_URL
+        sync: false
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
