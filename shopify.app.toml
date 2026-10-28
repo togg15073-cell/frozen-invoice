@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "d0c87293da9dfb00065931dfd9013a33"
-application_url = "https://example.com"
+application_url = "https://frozen-invoice.onrender.com"
 embedded = true
 name = "Frozen Invoice"
 
@@ -26,7 +26,7 @@ api_version = "2025-01"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://example.com/auth/callback", "https://example.com/auth/shopify/callback", "https://example.com/api/auth/callback" ]
+redirect_urls = [ "https://frozen-invoice.onrender.com/auth/callback", "https://frozen-invoice.onrender.com/auth/shopify/callback", "https://frozen-invoice.onrender.com/api/auth/callback" ]
 
 [build]
 include_config_on_deploy = true
