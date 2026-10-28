@@ -26,6 +26,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     return await billing.request({ plan: target as "Starter" | "Pro", isTest, returnUrl });
   } catch (e: any) {
+    if (e instanceof Response) throw e;
     const detail = Array.isArray(e?.errorData) ? e.errorData.map((x: any) => x.message).join("; ") : String(e?.message || e);
     return json({ error: `Could not start the subscription: ${detail}` }, { status: 400 });
   }
