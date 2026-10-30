@@ -38,3 +38,11 @@ export const unauthenticated = shopify.unauthenticated;
 export const login = shopify.login;
 export const registerWebhooks = shopify.registerWebhooks;
 export const sessionStorage = shopify.sessionStorage;
+
+const keepAliveUrl = process.env.SHOPIFY_APP_URL;
+if (process.env.NODE_ENV === "production" && keepAliveUrl && !(globalThis as any).__keepAlive) {
+  (globalThis as any).__keepAlive = setInterval(() => {
+    fetch(`${keepAliveUrl}/privacy`, { method: "HEAD" }).catch(() => {});
+  }, 10 * 60 * 1000);
+  (globalThis as any).__keepAlive.unref?.();
+}
