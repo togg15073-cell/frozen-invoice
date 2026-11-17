@@ -4,6 +4,7 @@ import { useFetcher, useLoaderData, useSearchParams, Form, Link as RLink } from 
 import { Page, Layout, Card, IndexTable, Text, Button, TextField, BlockStack, InlineStack, Badge, Banner, Link } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { useState } from "react";
+import { PdfButton } from "../components/PdfButton";
 import { authenticate } from "../shopify.server";
 import { createDocument, monthlyUsage } from "../models/documents.server";
 import { PLANS, planFromSubscriptions } from "../models/plans";
@@ -75,11 +76,11 @@ export default function Index() {
                       <IndexTable.Cell><Badge tone={o.displayFinancialStatus === "PAID" ? "success" : "attention"}>{o.displayFinancialStatus?.toLowerCase()}</Badge></IndexTable.Cell>
                       <IndexTable.Cell>
                         <InlineStack gap="200">
-                          {inv ? <Button url={`/app/documents/${inv.id}/pdf`} target="_blank" size="slim">Invoice {inv.number}</Button>
+                          {inv ? <PdfButton pdfUrl={`/app/documents/${inv.id}/pdf`} fallbackName={`invoice-${inv.number}.pdf`} size="slim">Invoice {inv.number}</PdfButton>
                             : <Button size="slim" loading={busy} onClick={() => fetcher.submit({ orderId: o.id, type: "invoice" }, { method: "post" })}>Create invoice</Button>}
-                          {pack ? <Button url={`/app/documents/${pack.id}/pdf`} target="_blank" size="slim" variant="plain">Packing slip</Button>
+                          {pack ? <PdfButton pdfUrl={`/app/documents/${pack.id}/pdf`} fallbackName={`packing-${pack.number}.pdf`} size="slim" variant="plain">Packing slip</PdfButton>
                             : <Button size="slim" variant="plain" onClick={() => fetcher.submit({ orderId: o.id, type: "packing" }, { method: "post" })}>Packing slip</Button>}
-                          {refunded && (cn ? <Button url={`/app/documents/${cn.id}/pdf`} target="_blank" size="slim" variant="plain">Credit note</Button>
+                          {refunded && (cn ? <PdfButton pdfUrl={`/app/documents/${cn.id}/pdf`} fallbackName={`credit-${cn.number}.pdf`} size="slim" variant="plain">Credit note</PdfButton>
                             : <Button size="slim" variant="plain" onClick={() => fetcher.submit({ orderId: o.id, type: "credit" }, { method: "post" })}>Credit note</Button>)}
                         </InlineStack>
                       </IndexTable.Cell>

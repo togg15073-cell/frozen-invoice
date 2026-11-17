@@ -4,6 +4,7 @@ import { useLoaderData, useSearchParams, Form } from "@remix-run/react";
 import { Page, Card, IndexTable, Text, Button, TextField, BlockStack, useIndexResourceState, InlineStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { useState } from "react";
+import { PdfButton } from "../components/PdfButton";
 import { authenticate } from "../shopify.server";
 import { listDocuments } from "../models/documents.server";
 
@@ -30,7 +31,7 @@ export default function Documents() {
         {selectedResources.length > 0 && (
           <Card><InlineStack align="space-between" blockAlign="center">
             <Text as="p">{selectedResources.length} selected</Text>
-            <Button variant="primary" url={`/app/documents/bulk/pdf?ids=${selectedResources.join(",")}`} target="_blank">Download as one PDF</Button>
+            <PdfButton variant="primary" pdfUrl={`/app/documents/bulk/pdf?ids=${selectedResources.join(",")}`} fallbackName="documents.pdf">Download as one PDF</PdfButton>
           </InlineStack></Card>
         )}
         <Card padding="0">
@@ -45,7 +46,7 @@ export default function Documents() {
                 <IndexTable.Cell>{d.customerName}</IndexTable.Cell>
                 <IndexTable.Cell>{d.total.toFixed(2)} {d.currency}</IndexTable.Cell>
                 <IndexTable.Cell>{String(d.createdAt).slice(0, 10)}</IndexTable.Cell>
-                <IndexTable.Cell><Button url={`/app/documents/${d.id}/pdf`} target="_blank" size="slim">PDF</Button></IndexTable.Cell>
+                <IndexTable.Cell><PdfButton pdfUrl={`/app/documents/${d.id}/pdf`} fallbackName={`${d.type}-${d.number}.pdf`} size="slim">PDF</PdfButton></IndexTable.Cell>
               </IndexTable.Row>
             ))}
           </IndexTable>
